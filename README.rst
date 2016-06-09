@@ -126,7 +126,7 @@ If you use VirtualBox guest additions to mount your osx onto the `boot2docker` v
 example /Users/your_name/openstack/oslo-incubator as /home/your_name/openstack/oslo-incubator,
 then you can add the following mapping::
 
-   dos --path-map=/Users/your_name:/home/your_name
+  dox --path-map=/Users/your_name:/home/your_name
 
 
 Advanced
