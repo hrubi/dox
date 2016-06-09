@@ -22,6 +22,7 @@ import sys
 import dox.commands
 import dox.config.cmdline
 import dox.images
+import dox.dockerfiles
 import dox.runner
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,8 @@ def parse_args():
                              ' if -c is given')
     parser.add_argument('-i', '--images', dest='images',
                         help='Base images to use')
+    parser.add_argument('--dockerfiles', dest='dockerfiles',
+                        help='Dockerfiles for base images to use')
     parser.add_argument('-e', '--environment', dest='environment',
                         default=None,
                         help='Run target environment.')
@@ -91,12 +94,12 @@ def main():
     return runner(args)
 
 
-def run_dox(args, images, command, image_name):
+def run_dox(args, bases, command, image_name):
     # Run
     try:
         run = functools.partial(dox.runner.Runner(args, image_name).run,
                                 command=command)
-        map(run, images)
+        map(run, bases)
     except Exception as e:
         logger.error("Operation failed, aborting dox.", exc_info=e)
         return 1
@@ -105,13 +108,19 @@ def run_dox(args, images, command, image_name):
 def runner(args):
     options = {}
     args_images = None
+    args_dockerfiles = None
 
     if not dox.runner.Runner(args).is_docker_installed():
         sys.exit(1)
 
     # Get Image
     if args.images:
-        args_images = [x.strip() for x in args.images.split(',')]
+        args_images = [dox.images.Image(x.strip())
+                       for x in args.images.split(',')]
+
+    if args.dockerfiles:
+        args_dockerfiles = [dox.dockerfiles.Dockerfile(x.strip())
+                            for x in args.dockerfiles.split(',')]
 
     if args.command:
         command = dox.config.cmdline.CommandLine(args.extra_args)
@@ -127,9 +136,18 @@ def runner(args):
         options['section'] = section
 
         if args_images:
-            images = args_images
+            bases = args_images
         else:
-            images = dox.images.get_images(options)
+            bases = dox.images.get_images(options)
+
+        if not bases:
+            if args_dockerfiles:
+                bases = args_dockerfiles
+            else:
+                bases = dox.dockerfiles.get_dockerfiles(options)
+
+        if not bases:
+            raise RuntimeError("No images or Dockerfiles specified")
 
         command = dox.commands.Commands(args.extra_args, options)
         logger.debug("Command source is %s, section %s" % (
@@ -137,4 +155,4 @@ def runner(args):
 
         # TODO(chmouel): add to section a proper image_name that include the
         # type of backend i.e: dox_yaml/tox_init
-        run_dox(args, images, command, image_name=section)
+        run_dox(args, bases, command, image_name=section)

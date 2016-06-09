@@ -97,6 +97,9 @@ class DoxYaml(base.ConfigBase):
     def get_images(self):
         return self._open_dox_yaml().get('images', [])
 
+    def get_dockerfiles(self):
+        return self._open_dox_yaml().get('dockerfiles', [])
+
     def get_commands(self, extra_args):
         return self._open_dox_yaml().get('commands', [])
 

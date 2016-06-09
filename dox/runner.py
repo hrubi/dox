@@ -72,9 +72,12 @@ class Runner(object):
             return False
         return True
 
-    def _docker_build(self, image, image_dir='.'):
+    def _docker_build(self, image, image_dir='.', dockerfile=None):
         logger.info('Building image %s' % image)
-        self._docker_cmd('build', '-t', image, image_dir)
+        if dockerfile:
+            self._docker_cmd('build', '-t', image, '-f', dockerfile, image_dir)
+        else:
+            self._docker_cmd('build', '-t', image, image_dir)
 
     def _docker_run(self, *args):
         logger.info('Running docker')
@@ -143,7 +146,7 @@ class Runner(object):
             return
 
         dockerfile = []
-        dockerfile.append("FROM %s" % image)
+        dockerfile.append("FROM %s" % self.base_image_name)
         try:
             tempd = tempfile.mkdtemp()
             if not self.user_map['username'] == 'root':
@@ -190,22 +193,22 @@ class Runner(object):
             return True
         return False
 
-    def build_base_image(self):
+    def build_base_image(self, dockerfile):
 
         logger.debug("Want base image")
         if self.have_base_image():
             return
-        self._docker_build(self.base_image_name)
+        self._docker_build(self.base_image_name, dockerfile=dockerfile)
 
-    def run(self, image, command):
+    def run(self, base, command):
         logger.debug(
-            "Going to run %(command)s in %(image)s" % dict(
-                command=command.test_command(), image=image))
+            "Going to run %(command)s in %(base)s" % dict(
+                command=command.test_command(), base=base))
         if self.args.rebuild:
             logger.debug("Need to rebuild")
 
-        if image is None:
-            self.build_base_image()
-        self.build_test_image(image, command)
+        if type(base).__name__ == 'Dockerfile':
+            self.build_base_image(base)
+        self.build_test_image(base, command)
 
         self.run_commands(shlex.split(command.test_command()))

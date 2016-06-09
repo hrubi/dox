@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Hewlett-Packard Development Company, L.P.
+# Copyright (c) 2016 GoodData
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,29 +14,36 @@
 # limitations under the License.
 
 __all__ = [
-    'get_images',
+    'get_dockerfiles',
 ]
+
+import os
 
 import dox.config.dox_yaml
 import dox.config.tox_ini
 
 
-class Image(str):
+class Dockerfile(str):
     pass
 
 
-def get_images(options):
+def get_dockerfiles(options):
     '''Examine the local environment and figure out where we should run.'''
 
     dox_yaml = dox.config.dox_yaml.get_dox_yaml(options)
     tox_ini = dox.config.tox_ini.get_tox_ini(options)
 
+    default_dockerfile = 'Dockerfile'
+
+    dockerfiles = []
     if dox_yaml.exists():
-        images = dox_yaml.get_images()
+        dockerfiles = dox_yaml.get_dockerfiles()
     elif tox_ini.exists():
-        images = tox_ini.get_images()
+        dockerfiles = tox_ini.get_dockerfiles()
+    elif os.path.exists(default_dockerfile):
+        dockerfiles = [default_dockerfile]
 
-    if not images:
-        return []
+    if not dockerfiles:
+        return None
 
-    return [Image(image) for image in images]
+    return [Dockerfile(dockerfile) for dockerfile in dockerfiles]

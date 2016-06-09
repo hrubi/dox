@@ -58,6 +58,11 @@ class ToxIni(base.ConfigBase):
         if ini.has_option('docker', 'images'):
             return ini.get('docker', 'images').split(',')
 
+    def get_dockerfiles(self):
+        ini = self._open_tox_ini()
+        if ini.has_option('docker', 'dockerfiles'):
+            return ini.get('docker', 'dockerfiles').split(',')
+
     def get_commands(self, extra_args):
         """Get commands to run from the config file.
 
